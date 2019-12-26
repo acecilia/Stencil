@@ -182,7 +182,23 @@ final class EnvironmentTests: XCTestCase {
     }
   }
 
+  func testUnresolvedVariable() {
+    self.template = Template(templateString: "Hello {{ human.name }}")
+
+    it("can render a variable not defined in the context and throwing is disabled") {
+      self.environment = Environment()
+      let result = try self.environment.render(template: self.template, context: [:])
+      try expect(result) == "Hello "
+    }
+
+    it("throws when a variable is not defined in the context and throwing is enabled") {
+      self.environment = Environment(throwOnUnresolvedVariable: true)
+      try self.expectError(context: [:], reason: "Variable could not be resolved", token: "human.name")
+    }
+  }
+
   private func expectError(
+    context: [String: Any] = ["names": ["Bob", "Alice"], "name": "Bob"],
     reason: String,
     token: String,
     file: String = #file,
@@ -192,7 +208,7 @@ final class EnvironmentTests: XCTestCase {
     let expectedError = expectedSyntaxError(token: token, template: template, description: reason)
 
     let error = try expect(
-      self.environment.render(template: self.template, context: ["names": ["Bob", "Alice"], "name": "Bob"]),
+      self.environment.render(template: self.template, context: context),
       file: file,
       line: line,
       function: function
