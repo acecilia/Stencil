@@ -197,6 +197,18 @@ final class EnvironmentTests: XCTestCase {
     }
   }
 
+  func testUnresolvedVariableWithDefaultFilter() {
+    self.template = Template(templateString: """
+      Hello {{ human.name|default:"World" }}
+      """)
+
+    it("does not throw when, despite the variable being unresolved, a filter provides a default value") {
+      self.environment = Environment(throwOnUnresolvedVariable: true)
+      let result = try self.environment.render(template: self.template, context: [:])
+      try expect(result) == "Hello World"
+    }
+  }
+
   private func expectError(
     context: [String: Any] = ["names": ["Bob", "Alice"], "name": "Bob"],
     reason: String,
