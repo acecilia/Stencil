@@ -201,13 +201,35 @@ final class EnvironmentTests: XCTestCase {
     self.template = Template(templateString: """
       Hello {{ human.name|default:"World" }}
       """)
+    self.environment = Environment(throwOnUnresolvedVariable: true)
 
-    it("does not throw when, despite the variable being unresolved, a filter provides a default value") {
-      self.environment = Environment(throwOnUnresolvedVariable: true)
+    it("does not throw when a filter provides a default value") {
       let result = try self.environment.render(template: self.template, context: [:])
       try expect(result) == "Hello World"
     }
   }
+
+  func testUnresolvedVariableWithTags() {
+    self.template = Template(templateString: """
+      {% if human.name %}Hello {{ human.name }}{% else %}No hello for you{% endif %}
+      """)
+    self.environment = Environment(throwOnUnresolvedVariable: true)
+
+    it("does not throw when using tags with defined variables") {
+      let result = try self.environment.render(template: self.template, context: ["human": ["name": "John"]])
+      try expect(result) == "Hello John"
+    }
+
+    it("throws when using tags with unresolved variable") {
+      try self.expectError(context: [:], reason: "Variable could not be resolved", token: "if human.name")
+    }
+
+    it("does not throw when using empty variables instead of undefined ones") {
+      let result = try self.environment.render(template: self.template, context: ["human": ["name": ""]])
+      try expect(result) == "No hello for you"
+    }
+  }
+
 
   private func expectError(
     context: [String: Any] = ["names": ["Bob", "Alice"], "name": "Bob"],
